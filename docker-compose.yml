@@ -1,0 +1,38 @@
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: admin_user
+      POSTGRES_PASSWORD: admin_user_password
+      POSTGRES_DB: sandbox_db
+    volumes:
+      # Postgres 18+ expects the mount at /var/lib/postgresql (not /var/lib/postgresql/data)
+      - postgres-data:/var/lib/postgresql
+    networks:
+      - sandbox-bridge
+
+  web-app:
+    build: .
+    working_dir: /code
+    volumes:
+      - .:/code
+    networks:
+      - sandbox-bridge
+    environment:
+      - DB_HOST=db
+      - DB_USER=admin_user
+      - DB_PASSWORD=admin_user_password
+      - DB_NAME=sandbox_db
+      - PYTHONPATH=/code
+    ports:
+      - "8501:8501"
+    depends_on:
+      - db
+    command: ["streamlit", "run", "app/main.py", "--server.address=0.0.0.0", "--server.port=8501"]
+
+networks:
+  sandbox-bridge:
+    external: false # Docker Compose will create this network if it doesn't exist
+
+volumes:
+  postgres-data:
