@@ -9,7 +9,7 @@ services:
       # Postgres 18+ expects the mount at /var/lib/postgresql (not /var/lib/postgresql/data)
       - postgres-data:/var/lib/postgresql
     networks:
-      - sandbox-bridge
+      - cpu-dashboard-network
 
   web-app:
     build: .
@@ -17,7 +17,7 @@ services:
     volumes:
       - .:/code
     networks:
-      - sandbox-bridge
+      - cpu-dashboard-network
     environment:
       - DB_HOST=db
       - DB_USER=admin_user
@@ -29,9 +29,27 @@ services:
     depends_on:
       - db
     command: ["streamlit", "run", "app/main.py", "--server.address=0.0.0.0", "--server.port=8501"]
+  
+  api:
+    build: .
+    working_dir: /code/api
+    volumes:
+      - ./api:/code/api
+    networks:
+      - cpu-dashboard-network
+    ports:
+      - "3100:3100"
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_USER=admin_user
+      - DB_PASSWORD=admin_user_password
+      - DB_NAME=sandbox_db
+    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "3100"]
 
 networks:
-  sandbox-bridge:
+  cpu-dashboard-network:
     external: false # Docker Compose will create this network if it doesn't exist
 
 volumes:
